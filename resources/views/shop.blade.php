@@ -41,7 +41,10 @@
                                             <div class="shop__sidebar__categories">
                                                 <ul class="nice-scroll">
                                                 @foreach ($categories as $category)
+                                                <div class="row">
                                                     <li><a href="/shop/filter-category/{{$category->cat_name}}">{{$category->cat_name . '('. $category->count .')'}}</a></li>
+                                                    <li><a href="/shop/filter-category/unset/{{$category->cat_name}}">X</a></li>
+                                                    </div>
                                                 @endforeach    
                                                 </ul>
                                             </div>

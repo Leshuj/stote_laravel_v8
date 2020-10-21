@@ -9,26 +9,51 @@ use App\Models\Product;
 use App\Models\Shopping_cart;
 use App\Models\Category;
 use App\Models\Order;
+use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\DB;
+
 
 class ShopController extends Controller
 {
     //
     
-    public function ShopPage(Request $request){        
-        $all[] = Product::paginate(3);
-        // var_dump($all);die;
+    public function ShopPage(Request $request){   
+       
+        $no_filter = $request->cookie('no_filter');
+        $filter_cat = $request->cookie('filter_cat');
+        var_dump($no_filter, $filter_cat);
+        if ((isset($no_filter) && $no_filter === "ALL" ) && (isset($filter_cat) != NULL)){
+            $cat_id = Category::where('category_name',$filter_cat)->get();
+            $all[] = Product::where('id_category', $cat_id[0]->id)->paginate(3);
+        }else {
+            $all[] = Product::paginate(3);
+        }
+        if ($request->cookie("no_filter") !== NULL){
+
+            // $cookie = cookie('filters', 'ALL', 3600);
+            // return response($request->url())->cookie($cookie);
+        } else {
+
+            $cookie = cookie('no_filter', 'ALL', 3600);
+            return redirect('/')->withCookie($cookie);
+        }
+               
+
         $sum = Shopping_CartController::getTotalPrice($request);
         $products_in_category = ShopController::getCategories();
         return view('shop', ['total' => $sum, 'products' => $all, 'categories' => $products_in_category]);
     }
 
-    public function Filtered_by_category($category_name,Request $request){      
-        $sum = Shopping_CartController::getTotalPrice($request);
-        $products_in_category = ShopController::getCategories();
-        $cat_id = Category::where('category_name',$category_name)->get();        
-        $all[] = Product::where('id_category', $cat_id[0]->id)->paginate(3);
-        // var_dump($path);die;
-        return view('shop', ['total' => $sum,'products' => $all,'categories' => $products_in_category]);
+    public function Filtered_by_category($category_name){    
+        $cookie = cookie('filter_cat', $category_name, 3600);
+        $reset_cookie = cookie('no_filter', 'ALL', -3600);
+        return redirect('/')->withCookie($cookie, $reset_cookie);
+        // $sum = Shopping_CartController::getTotalPrice($request);
+        // $products_in_category = ShopController::getCategories();
+        // $cat_id = Category::where('category_name',$category_name)->get();        
+        // $all[] = Product::where('id_category', $cat_id[0]->id)->paginate(3);
+
+        // return view('shop', ['total' => $sum,'products' => $all,'categories' => $products_in_category]);
     }
 
     public function Filtered_by_price($filter_name,Request $request){      
@@ -54,9 +79,14 @@ class ShopController extends Controller
         }
         return $all_prod;
     }
+    public function Filter_unset($category_name){
+        $cookie = cookie('filter_cat', $category_name, -3600);
+        $set_cookie = cookie('no_filter', 'ALL', 3600);
+        return redirect('/')->withCookie($cookie, $set_cookie);
+    }
 
     public function Sortered_by($sort_by,Request $request){
-        var_dump($sort_by);
+        // var_dump($sort_by);
         if($sort_by === "low-to-high"){
             $sort = "ASC";
             $all[] = Product::orderBy('price',$sort)->paginate(3);
